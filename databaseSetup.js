@@ -29,9 +29,9 @@ function setUpDatabase () {
 }
 
 //addCommand, adds new command in table and parametrized query bc input in SQL
-function addCommand(name, message) {
-    const sql = "INSERT INTO custom_commands (name, message) VALUES (?, ?)";
-    db.run(sql, [name,message]);
+function addCommand(name, response) {
+    const sql = "INSERT INTO custom_commands (name, response) VALUES (?, ?)";
+    db.run(sql, [name, response]);
 } 
 
 //removeCommand, Deletes command from table
@@ -45,4 +45,5 @@ process.on('exit', () => {
     db.close();
 });
 
+//Exports functions so can be used in twitchBot.js
 module.exports = { setUpDatabase, addCommand, removeCommand};

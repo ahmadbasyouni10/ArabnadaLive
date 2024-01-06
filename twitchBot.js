@@ -2,7 +2,7 @@
 const tmi = require('tmi.js')
 
 //functions from the database setup
-const { setupdataBase, addCommand, removeCommand } = require('./databaseSetup');
+const { setUpDatabase, addCommand, removeCommand } = require('./databaseSetup');
 
 //My twitch channel
 var twitchChannel = "arabnada"
@@ -31,8 +31,14 @@ const options = {
 //Initialize the bot's client
 const client = new tmi.client(options)
 
-//Connects the client to Twitch's IRC servers
-client.connect();
+//Starts the twitch bot by connecting to Twitch's IRC server
+function startTwitchBot() {
+    client.connect();
+}
+
+//Exported so can be used in other files 
+module.exports.startTwitchBot = startTwitchBot
+module.exports.client = client;
 
 //Registering Command Handlers
 client.on('connected', whenConnected)
@@ -43,7 +49,7 @@ let commands = { ping , echo, socials, discord, hello, specs}
 
 //Bot Handlers
 function whenConnected (address, port) {
-    client.action(twitchChannel, 'Hello, Shroom Bot is now connected.')
+    client.action(twitchChannel, 'Hello, ArabnadaLive is now connected.')
 }
 
 function whenChat (twitchChannel, user, message, self) {
@@ -74,20 +80,100 @@ function whenChat (twitchChannel, user, message, self) {
 
             console.log(`* EXECUTED_COMMAND : ${cleanCommand} command for ${user.username}`)
         } else {
-            console.log(`* ERROR : Unknown command "${cleanCommand}" from ${user.username}`)
+            //checks if command is newcommand, which will enable mod to add command
+            if (cleanCommand === "newcommand" && user.mod) {
+                newCommand(client, message, args, user, twitchChannel, self);
+            }
+            //checks if command is deletecommand, which will enable mod to delete a command
+            else if (cleanCommand === "deletecommand" && user.mod) {
+                deleteCommand(client, message, args, user, twitchChannel, self);
+            }
+            else {
+                console.log(`* ERROR : Unknown command "${cleanCommand}" from ${user.username}`)
+            }
+            
         }
     } 
 }
 
 
-//Add or Remove Command from chat (using database) 
-//Update commands list, adding or removing wrorking function
+//Add Command from chat (using database) 
+//Update commands list, adding wrorking function
 function newCommand(client, message, args, user, twitchChannel, self) {
+    //checks if user has attribute mod
     if (user.mod) {
-        addCommand('')
+        //ensures that two words are being provided at least
+        if (args.length >= 2) {
+            //takes first word as command name
+            //takes the rest of array arg and joins them into sentence
+            const commandName = args[0];
+            const responseText = args.slice(1).join('');
+
+            //calls the databasesetup function and handles error
+            //if callback successful, then adds command using spreading
+            //creates dynamic function for the command to work as expected (arrow fun)
+            addCommand(commandName, responseText, user.username, (err) => {
+                if (err) {
+                    console.error("There was an error trying to add the command: ", err);
+                    client.say(twitchChannel, `${user.username} - Error adding command, Try again!`);
+                }
+                else {
+                    commands = {...commands, [commandName.toLowerCase()]: (client, message, args, user, twitchChannel, self) =>
+                    {
+                        client.say(twitchChannel, `@${user.username} - ${responseText}`)
+                    }}
+                    console.log("Command added successfully!");
+
+                    client.say(twitchChannel, `${user.username} - New command added successfully!`);
+                }
+            });
+        //guides user on how to use the addcommand
+        } else {
+            client.say(twitchChannel, `@${user.username} - To add a new command, use !newCommand (command name) (response text). 
+            For example: !newcommand color My favorite color is blue.`);
+        }
+    }
+    //informs user that they are not a mod
+    else {
+        client.say(twitchChannel, `${user.username} - You don't have permission to add a new command!`);
     }
 
 }
+
+//Remove Command from chat (using database) 
+//Update commands list, removing wrorking function
+function deleteCommand(client, message, args, user, twitchChannel, self) {
+    if (user.mod) {
+        const commandName = args[0];
+
+        if(!commandName) {
+            client.say(twitchChannel, `@${user.username} - Please Provide a command that exists, so you can delete it`)
+            return
+        }
+
+        //calls removeCommand from databaseSetup, handles error
+        //deletes specific command from commands
+        //changes it to lower case and removes extra space to avoid error using trim
+        removeCommand(commandName.trim(), (err) => {
+            if(err) {
+                console.error("Error removing the command: ", err);
+                client.say(twitchChannel, `@${user.username} - Error trying to remove the command. Try again!`)
+            }
+            else {
+                delete commands[commandName.toLowerCase().trim()];
+                console.log("Command successfully removed")
+
+                client.say(twitchChannel, `@${user.username} - Command successfully removed`)
+            }
+        });
+    }
+    else{
+        client.say(twitchChannel, `${user.username} - You don't have permission to add a new command!`);
+    }
+      
+}
+
+
 
 // 1 - Displays the ping of the bot to the server
 function ping (client, message, args, user, twitchChannel, self) {
@@ -134,7 +220,7 @@ function specs (client, message, args, user, twitchChannel, self) {
 }
 
 function age (client, message, args, user, twitchChannel, self) {
-    var year = newDate().getFullYear();
+    var year = new Date().getFullYear();
     var age = year - 2004;
     client.say(twitchChannel, `@${user.username} - I am ${age} years old, born in 2004`)
 }
