@@ -1,20 +1,48 @@
 //initializing sqlite3 (Node.js library), which we need to create database
-const sqlite3 = requite('sqlite3').verbose();
-let sq
+const sqlite3 = require('sqlite3').verbose();
+
 
 //connect to the db, create it if doesn't exist
-const db = new sqlite3.Database('twitch_bot_database.db');
+//prints in console if error occurs
+const db = new sqlite3.Database('twitch_bot_database.db', (err)=> {
+if (err) {
+    console.log(err.message);
+}
+});
 
+//creates table with id being key
+//executes the table with SQL by using run, handles error as well
 function setUpDatabase () {
     const createTable = `
         CREATE TABLE IF NOT EXISTS custom_commands (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
-            response TEXT NOT NULL,
-            added_by TEXT NOT NULL,
-            added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            response TEXT NOT NULL
         ) 
-        `;
+    `;
     
-    db.run(createTableSql)
+    db.run(createTable, (err)=> {
+        if (err) {
+            console.log(err.message)
+        }
+    })
 }
+
+//addCommand, adds new command in table and parametrized query bc input in SQL
+function addCommand(name, message) {
+    const sql = "INSERT INTO custom_commands (name, message) VALUES (?, ?)";
+    db.run(sql, [name,message]);
+} 
+
+//removeCommand, Deletes command from table
+function removeCommand(name) {
+    const sql = "DELETE FROM custom_commands WHERE name = ?";
+    db.run(sql, [name]);
+}
+
+// Disconnects from database, when bot is disconnected
+process.on('exit', () => {
+    db.close();
+});
+
+module.exports = { setUpDatabase, addCommand, removeCommand};

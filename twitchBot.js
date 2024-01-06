@@ -1,6 +1,9 @@
 //imports the Node.js library that will interact with Twitch's service
 const tmi = require('tmi.js')
 
+//functions from the database setup
+const { setupdataBase, addCommand, removeCommand } = require('./databaseSetup');
+
 //My twitch channel
 var twitchChannel = "arabnada"
 
@@ -37,7 +40,6 @@ client.on('chat', whenChat)
 
 // List of known commands
 let commands = { ping , echo, socials, discord, hello, specs}
-
 
 //Bot Handlers
 function whenConnected (address, port) {
@@ -77,6 +79,15 @@ function whenChat (twitchChannel, user, message, self) {
     } 
 }
 
+
+//Add or Remove Command from chat (using database) 
+//Update commands list, adding or removing wrorking function
+function newCommand(client, message, args, user, twitchChannel, self) {
+    if (user.mod) {
+        addCommand('')
+    }
+
+}
 
 // 1 - Displays the ping of the bot to the server
 function ping (client, message, args, user, twitchChannel, self) {
