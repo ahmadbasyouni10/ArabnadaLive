@@ -71,6 +71,8 @@ function whenChat (twitchChannel, user, message, self) {
         //Takes the first word away, lowercases it, and assigns it
         const cleanCommand = args.shift().toLowerCase();
 
+        console.log("Clean Command: ", cleanCommand);
+
         //Checks if the first word in user's message matches commands familiar by the bot
         if (cleanCommand in commands) {
             const commandFunction = commands[cleanCommand]
@@ -79,73 +81,68 @@ function whenChat (twitchChannel, user, message, self) {
             commandFunction(client, message, args, user, twitchChannel, self)
 
             console.log(`* EXECUTED_COMMAND : ${cleanCommand} command for ${user.username}`)
+        } else if (cleanCommand === "newcommand") {
+            newCommand(client, message, args, user, twitchChannel, self);
+        } else if (cleanCommand === "deletecommand") {
+            deleteCommand(client, message, args, user, twitchChannel, self);
         } else {
-            //checks if command is newcommand, which will enable mod to add command
-            if (cleanCommand === "newcommand" && user.mod) {
-                newCommand(client, message, args, user, twitchChannel, self);
-            }
-            //checks if command is deletecommand, which will enable mod to delete a command
-            else if (cleanCommand === "deletecommand" && user.mod) {
-                deleteCommand(client, message, args, user, twitchChannel, self);
-            }
-            else {
-                console.log(`* ERROR : Unknown command "${cleanCommand}" from ${user.username}`)
-            }
-            
+            console.log(`* ERROR : Unknown command "${cleanCommand}" from ${user.username}`);
         }
-    } 
+    }
 }
 
 
-//Add Command from chat (using database) 
-//Update commands list, adding wrorking function
+// Add Command from chat (using database) 
+// Update commands list, adding working function
 function newCommand(client, message, args, user, twitchChannel, self) {
-    //checks if user has attribute mod
-    if (user.mod) {
-        //ensures that two words are being provided at least
+    // Checks if the user has the mod attribute
+    if (user.username.toLowerCase() === 'arabnada') {
+        // Ensures that two words are being provided at least
         if (args.length >= 2) {
-            //takes first word as command name
-            //takes the rest of array arg and joins them into sentence
+            // Takes the first word as the command name
+            // Takes the rest of the array args and joins them into a sentence
             const commandName = args[0];
             const responseText = args.slice(1).join('');
 
-            //calls the databasesetup function and handles error
-            //if callback successful, then adds command using spreading
-            //creates dynamic function for the command to work as expected (arrow fun)
+            // Calls the database setup function and handles error
+            // If the callback is successful, then adds the command using spreading
+            // Creates a dynamic function for the command to work as expected (arrow function)
             addCommand(commandName, responseText, user.username, (err) => {
                 if (err) {
                     console.error("There was an error trying to add the command: ", err);
                     client.say(twitchChannel, `${user.username} - Error adding command, Try again!`);
-                }
-                else {
-                    commands = {...commands, [commandName.toLowerCase()]: (client, message, args, user, twitchChannel, self) =>
-                    {
-                        client.say(twitchChannel, `@${user.username} - ${responseText}`)
-                    }}
-                    console.log("Command added successfully!");
+                } else {
+                    // Create a new object with the new command, which has its working function for later use
+                    const newCommands = { [commandName.toLowerCase()]: (client, message, args, user, twitchChannel, self) => {
+                        client.say(twitchChannel, `@${user.username} - ${responseText}`);
+                    }};
 
+                    // Use spreading to add the newcommand to commands
+                    commands = { ...commands, ...newCommands };
+
+                    console.log("Command added successfully!");
                     client.say(twitchChannel, `${user.username} - New command added successfully!`);
                 }
             });
-        //guides user on how to use the addcommand
+            // Guides the user on how to use the addcommand
         } else {
             client.say(twitchChannel, `@${user.username} - To add a new command, use !newCommand (command name) (response text). 
             For example: !newcommand color My favorite color is blue.`);
         }
     }
-    //informs user that they are not a mod
+    // Informs the user that they are not a mod
     else {
         client.say(twitchChannel, `${user.username} - You don't have permission to add a new command!`);
     }
-
 }
 
 //Remove Command from chat (using database) 
 //Update commands list, removing wrorking function
 function deleteCommand(client, message, args, user, twitchChannel, self) {
-    if (user.mod) {
+    if (user.username.toLowerCase() === 'arabnada') {
         const commandName = args[0];
-
+        
+        //handles error if command doesnt exist
         if(!commandName) {
             client.say(twitchChannel, `@${user.username} - Please Provide a command that exists, so you can delete it`)
             return
@@ -167,7 +164,7 @@ function deleteCommand(client, message, args, user, twitchChannel, self) {
             }
         });
     }
-    else{
+    else {
         client.say(twitchChannel, `${user.username} - You don't have permission to add a new command!`);
     }
       
@@ -224,7 +221,3 @@ function age (client, message, args, user, twitchChannel, self) {
     var age = year - 2004;
     client.say(twitchChannel, `@${user.username} - I am ${age} years old, born in 2004`)
 }
-
-
-
-

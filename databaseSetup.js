@@ -1,17 +1,17 @@
-//initializing sqlite3 (Node.js library), which we need to create database
+// Initializing SQLite3 (Node.js library), which we need to interact w/ Database
 const sqlite3 = require('sqlite3').verbose();
 
 
-//connect to the db, create it if doesn't exist
-//prints in console if error occurs
+// Connect to the db, create it if doesn't exist
+// Prints in console if error occurs
 const db = new sqlite3.Database('twitch_bot_database.db', (err)=> {
 if (err) {
     console.log(err.message);
 }
 });
 
-//creates table with id being key
-//executes the table with SQL by using run, handles error as well
+// Creates table with id being key
+// Executes the table with SQL by using run, handles error as well
 function setUpDatabase () {
     const createTable = `
         CREATE TABLE IF NOT EXISTS custom_commands (
@@ -28,16 +28,43 @@ function setUpDatabase () {
     })
 }
 
-//addCommand, adds new command in table and parametrized query bc input in SQL
-function addCommand(name, response) {
+// addCommand, adds new command in table
+// Uses parametrized query to stop SQL injection, from user input
+function addCommand(name, response, username, callback) {
     const sql = "INSERT INTO custom_commands (name, response) VALUES (?, ?)";
-    db.run(sql, [name, response]);
+    db.run(sql, [name, response], function (err) {
+        if (err) {
+            console.error("Error adding command to database: ", err)
+            if (callback) {
+                callback(err);
+            }
+        }
+        else {
+            console.log("Command added")
+            if (callback) {
+                callback(null);
+            }
+        }
+    });
 } 
 
-//removeCommand, Deletes command from table
-function removeCommand(name) {
+// RemoveCommand, Deletes command from table
+function removeCommand(name, callback) {
     const sql = "DELETE FROM custom_commands WHERE name = ?";
-    db.run(sql, [name]);
+    db.run(sql, [name], function (err) {
+        if (err) {
+            console.error("Error removing command from database: ", err)
+            if (callback) {
+                callback(err);
+            }
+        }
+        else {
+            console.log("Command removed")
+            if (callback) {
+                callback(null);
+            }
+        }
+    });
 }
 
 // Disconnects from database, when bot is disconnected
