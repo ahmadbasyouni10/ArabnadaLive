@@ -45,7 +45,10 @@ client.on('connected', whenConnected)
 client.on('chat', whenChat)
 
 // List of known commands
-let commands = { ping , echo, socials, discord, hello, specs}
+let commands = { ping , echo, socials, discord, hello, specs, age, poll}
+
+// List of active polls
+let polls = {};
 
 //Bot Handlers
 function whenConnected (address, port) {
@@ -141,7 +144,7 @@ function newCommand(client, message, args, user, twitchChannel, self) {
 function deleteCommand(client, message, args, user, twitchChannel, self) {
     if (user.username.toLowerCase() === 'arabnada') {
         const commandName = args[0];
-        
+
         //handles error if command doesnt exist
         if(!commandName) {
             client.say(twitchChannel, `@${user.username} - Please Provide a command that exists, so you can delete it`)
@@ -170,6 +173,23 @@ function deleteCommand(client, message, args, user, twitchChannel, self) {
       
 }
 
+// Poll function
+function poll(client, message, args, user, twitchChannel, self) {
+    if (user.mod) {
+        const subCommand = args[1];
+
+        switch (subCommand) {
+            
+            case "start":
+                if(!activePolls[twitchChannel]) {
+                    const question = args.slice(1).join(' ');
+                    const durationInSeconds = 60;
+
+                    client.say(twitchChannel, `@${user.username} has started a poll: ${question} (Duration: ${durationInSeconds} seconds). Type !poll vote <option> to vote!`)
+                }
+        }
+    }
+}
 
 
 // 1 - Displays the ping of the bot to the server
@@ -221,3 +241,5 @@ function age (client, message, args, user, twitchChannel, self) {
     var age = year - 2004;
     client.say(twitchChannel, `@${user.username} - I am ${age} years old, born in 2004`)
 }
+
+
