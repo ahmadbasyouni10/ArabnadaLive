@@ -181,12 +181,45 @@ function poll(client, message, args, user, twitchChannel, self) {
         switch (subCommand) {
             
             case "start":
-                if(!activePolls[twitchChannel]) {
-                    const question = args.slice(1).join(' ');
-                    const durationInSeconds = 60;
+                if(!polls[twitchChannel]) {
+                    const question = args.slice(2).join(' ');
+                    polls[twitchChannel] = {
+                        question: question,
+                        duration: 60,
+                        options: {},
+                        voters: [],
+                        endTime: Date.now() + 60 * 1000,
+                    };
 
-                    client.say(twitchChannel, `@${user.username} has started a poll: ${question} (Duration: ${durationInSeconds} seconds). Type !poll vote <option> to vote!`)
+                    client.say(twitchChannel, `@${user.username} has started a poll: ${question} (Duration: 60 seconds). Type !poll vote <option> to vote!`)
+                    setTimeout(() => {
+                        announcePollResults(client, twitchChannel)
+                    }, 60*1000)
+                
+                }   
+                break;
+                
+            case "vote":
+                if (polls[twitchChannel]) {
+                    const option = args[2].toLowerCase();
+                    if (polls[twitchChannel].voters.includes(user.username)) {
+                        client.say(twitchChannel, `@${user.username} - You have already voted!`)
+                    }
+                    else {
+                        if (polls[twitchChannel].options.hasOwnProperty(option)) {
+                            polls[twitchChannel].options[option]
+                            polls[twitchChannel].voters.push(user.username)
+                            client.say(twitchChannel, `@${user.username} has voted for ${option}`)
+                        }
+                        else {
+                            client.say(twitchChannel, `@${user.username} - Please choose valid option`)
+                        }
+                    }
                 }
+                else {
+                    client.say(twitchChannel, `@${user.username} - No Active poll!`)
+                }
+                break;
         }
     }
 }
